@@ -19,7 +19,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Transactional
 public class OrderService {
-	private final WebClient webClient;
+	private final WebClient.Builder webClientBuilder;
 	private final OrderRepository orderRepository;
 	
 	public void submitOrder(OrderRequest orderRequest) {
@@ -31,8 +31,8 @@ public class OrderService {
 		baNos.add("30900000000168");
 		baNos.add("31300000806387");
 		
-		AccountResponse[] accountArr = webClient.get()
-				.uri("http://localhost:8080/api/account",
+		AccountResponse[] accountArr = webClientBuilder.build().get()
+				.uri("http://account-service/api/account",
 						uriBuilder -> uriBuilder.queryParam("baNo", baNos).build())
 				.retrieve()
 				.bodyToMono(AccountResponse[].class)
