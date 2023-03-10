@@ -25,4 +25,10 @@ public class OrderController {
 		 
         return "order";
 	 }
+	 
+	 @GetMapping
+	 @ResponseStatus(HttpStatus.OK)
+	 public String listAlls() {
+        return "listAlls";
+	 }
 }
