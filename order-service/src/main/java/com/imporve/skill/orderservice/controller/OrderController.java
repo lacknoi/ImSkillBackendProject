@@ -1,6 +1,8 @@
 package com.imporve.skill.orderservice.controller;
 
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -30,5 +32,13 @@ public class OrderController {
 	 @ResponseStatus(HttpStatus.OK)
 	 public String listAlls() {
         return "listAlls";
+	 }
+	 
+	 @PostMapping
+	 @ResponseStatus(HttpStatus.OK)
+	 public String createOrder(@RequestBody OrderRequest orderRequest) {
+		orderService.createOrder(orderRequest);
+		 
+        return "order";
 	 }
 }
