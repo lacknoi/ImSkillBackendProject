@@ -1,12 +1,16 @@
 package com.imporve.skill.accountservice.service;
 
+import java.util.Date;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.imporve.skill.accountservice.dto.AccountRequest;
 import com.imporve.skill.accountservice.dto.AccountResponse;
+import com.imporve.skill.accountservice.model.Account;
 import com.imporve.skill.accountservice.model.BAInfo;
+import com.imporve.skill.accountservice.repository.AccountRepository;
 import com.imporve.skill.accountservice.repository.BAInfoRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -15,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AccountService {
 	private final BAInfoRepository baInfoRepository;
+	private final AccountRepository accountRepository;
 	
 	@Transactional(readOnly = true)
 	public void getAccountBaNo(String accntNo) {
@@ -43,4 +48,33 @@ public class AccountService {
 					.accntName(baInfo.getBaName()).build()
 				).toList();
 	}
+	
+	public List<AccountResponse> createAccount(List<AccountRequest> accountRequestList) {
+		List<Account> accountList = accountRequestList
+						                .stream()
+						                .map(accountRequest -> mapAccountRequestToAccount(accountRequest))
+						                .toList();
+		
+		accountList = accountRepository.saveAll(accountList);
+		
+		List<AccountResponse> accountResponseList = accountList.stream()
+												.map(account ->
+														AccountResponse.builder()
+															.accountId(account.getAccountId()).build()
+													).toList();
+		
+		return accountResponseList;
+	}
+	
+	private Account mapAccountRequestToAccount(AccountRequest accountRequest) {
+		Account account = new Account();
+		account.setAccountName(accountRequest.getAccountName());
+		account.setAccountLevel(accountRequest.getAccountLevel());
+		account.setCreated(new Date());
+		account.setCreatedBy(accountRequest.getTransactionBy());
+		account.setLastUpd(new Date());
+		account.setLastUpdBy(accountRequest.getTransactionBy());
+		
+        return account;
+    }
 }
