@@ -5,7 +5,7 @@
     <artifactId>microservice</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
-  <artifactId>payment-service</artifactId>
+  <artifactId>debt-service</artifactId>
   
   <properties>
 		<java.version>17</java.version>
@@ -48,6 +48,10 @@
 	   <dependency>
 		   <groupId>org.hibernate.validator</groupId>
 		   <artifactId>hibernate-validator</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webflux</artifactId>
 		</dependency>
 	</dependencies>
 </project>
