@@ -35,7 +35,7 @@ public class OrderController {
 	 }
 	 
 	 @PostMapping
-	 @ResponseStatus(HttpStatus.OK)
+	 @ResponseStatus(HttpStatus.CREATED)
 	 public String createOrder(@RequestBody OrderRequest orderRequest) {
 		orderService.createOrder(orderRequest);
 		 

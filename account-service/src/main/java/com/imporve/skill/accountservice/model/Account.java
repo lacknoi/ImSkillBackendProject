@@ -1,7 +1,6 @@
 package com.imporve.skill.accountservice.model;
 
 import java.util.Date;
-import java.util.List;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -21,6 +20,7 @@ public class Account {
 	@Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer accountId;
+	private String accountNo;
 	private String accountName;
 	private String accountLevel;
 	private Date created;
