@@ -1,4 +1,4 @@
-package com.imporve.skill.paymentprofileservice.config;
+package com.imporve.skill.paymentservice.config;
 
 
 import javax.sql.DataSource;

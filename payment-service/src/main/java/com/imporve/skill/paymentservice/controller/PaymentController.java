@@ -1,4 +1,4 @@
-package com.imporve.skill.paymentprofileservice.controller;
+package com.imporve.skill.paymentservice.controller;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -9,7 +9,7 @@ import org.springframework.http.HttpStatus;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/paymentprofile")
+@RequestMapping("/api/payment")
 @RequiredArgsConstructor
 public class PaymentController {
 	
