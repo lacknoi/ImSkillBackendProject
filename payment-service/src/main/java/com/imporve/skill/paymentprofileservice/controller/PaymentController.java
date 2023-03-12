@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/paymentprofile")
 @RequiredArgsConstructor
-public class PaymentProfileController {
+public class PaymentController {
 	
 	 @GetMapping("/paymentprofiles")
 	 @ResponseStatus(HttpStatus.OK)
