@@ -37,10 +37,23 @@ public class AccountController {
 		return accountService.getBAInfoByCaNo(caNo);
 	}
 	
+//	@GetMapping
+//	@ResponseStatus(HttpStatus.OK)
+//	public List<AccountResponse> getAccountByBANo(@RequestParam List<String> baNo) {
+//        return accountService.getAccountByNo(baNo);
+//	}
+	
 	@GetMapping
 	@ResponseStatus(HttpStatus.OK)
-	public List<AccountResponse> getAccountByBANo(@RequestParam List<String> baNo) {
-        return accountService.getAccountByNo(baNo);
+	public AccountResponse getAccountByBANo(@RequestParam("account-level") String accountLevel
+								, @RequestParam("account-no") String accountNo) {
+        return accountService.getAccountByaccountLevelAndAccountNo(accountLevel, accountNo);
+	}
+	
+	@GetMapping("/billing/cano")
+	@ResponseStatus(HttpStatus.OK)
+	public List<AccountResponse> getAccountByMasterNo(@RequestParam("account-no") String accountNo) {
+        return accountService.getAccountByMasterNo(accountNo);
 	}
 	
 	@PostMapping

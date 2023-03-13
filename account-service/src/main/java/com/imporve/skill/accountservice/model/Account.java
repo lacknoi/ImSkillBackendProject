@@ -20,6 +20,7 @@ public class Account {
 	@Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer accountId;
+    private String masterId;
 	private String accountNo;
 	private String accountName;
 	private String accountLevel;

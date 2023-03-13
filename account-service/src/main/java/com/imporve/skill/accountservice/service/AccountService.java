@@ -54,6 +54,23 @@ public class AccountService {
 				).toList();
 	}
 	
+	public AccountResponse getAccountByaccountLevelAndAccountNo(String accountLevel, String accountNo) {
+		Account account = accountRepository.findByAccountLevelAndAccountNo(accountLevel, accountNo);
+		
+		return AccountResponse.builder()
+				.accntName(account.getAccountName())
+				.accntNo(account.getAccountNo()).build();
+	}
+	
+	public List<AccountResponse> getAccountByMasterNo(String accountNo) {
+		return accountRepository.findByMasterNo(accountNo).stream()
+			.map(account ->
+					AccountResponse.builder()
+					.accntNo(account.getAccountNo())
+					.accntName(account.getAccountName()).build()
+				).toList();
+	}
+	
 	public List<AccountResponse> createAccount(List<AccountRequest> accountRequestList) {
 		List<Account> accountList = accountRequestList
 						                .stream()
@@ -74,7 +91,7 @@ public class AccountService {
 				
 				DebtRequest debtRequest = DebtRequest.builder()
 						.baNo(account.getAccountNo())
-						.transactionBy(null)
+						.transactionBy(account.getLastUpdBy())
 						.build();
 				
 				webClientBuilder.build().post()
