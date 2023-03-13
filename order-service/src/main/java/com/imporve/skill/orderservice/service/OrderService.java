@@ -51,6 +51,15 @@ public class OrderService {
 	}
 	
 	public void createOrder(OrderRequest orderRequest) {
+		for(OrderItemDto orderItemDto : orderRequest.getOrderItemDtoList()) {
+			boolean blacklistStatus = webClientBuilder.build().get()
+								    .uri("http://debt-service/api/debt/blacklist/" + orderItemDto.getAccountNo())
+								    .retrieve()
+								    .bodyToMono(Boolean.class)
+								    .block();
+		}
+				
+		
 		Order order = new Order();
 		order.setOrderNo("O01");
 		order.setCreated(new Date());

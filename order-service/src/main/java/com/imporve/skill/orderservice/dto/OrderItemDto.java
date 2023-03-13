@@ -10,4 +10,5 @@ import lombok.NoArgsConstructor;
 public class OrderItemDto {
 	private String accountName;
 	private String accountLevel;
+	private String accountNo;
 }
