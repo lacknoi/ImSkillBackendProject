@@ -17,6 +17,7 @@
   	<module>discovery-server</module>
   	<module>api-gateway</module>
   	<module>debt-service</module>
+  	<module>user-service</module>
   </modules>
   
   <properties>
