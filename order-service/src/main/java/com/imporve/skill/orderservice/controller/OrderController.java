@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.imporve.skill.orderservice.dto.OrderItemRequest;
 import com.imporve.skill.orderservice.dto.OrderRequest;
 import com.imporve.skill.orderservice.service.OrderService;
 
@@ -36,8 +37,16 @@ public class OrderController {
 	 
 	 @PostMapping
 	 @ResponseStatus(HttpStatus.CREATED)
-	 public String createOrder(@RequestBody OrderRequest orderRequest) {
-		orderService.createOrder(orderRequest);
+	 public String createOrderList(@RequestBody OrderRequest orderRequest) {
+		orderService.createOrderList(orderRequest);
+		 
+        return "order";
+	 }
+	 
+	 @PostMapping("/create-order")
+	 @ResponseStatus(HttpStatus.CREATED)
+	 public String createOrder(@RequestBody OrderItemRequest orderItemRequest) {
+		orderService.createOrder(orderItemRequest);
 		 
         return "order";
 	 }

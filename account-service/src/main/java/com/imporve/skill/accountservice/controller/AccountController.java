@@ -30,6 +30,12 @@ public class AccountController {
 		 
         return "accounts";
 	}
+	
+	@GetMapping("/{account-no}")
+	@ResponseStatus(HttpStatus.OK)
+	public AccountResponse getAccountByNo(@PathVariable("account-no") String accountNo) {
+		return accountService.getAccountByAccountNo(accountNo);
+	}
 
 	@GetMapping("/billing/cano/{ca-no}")
 	@ResponseStatus(HttpStatus.OK)

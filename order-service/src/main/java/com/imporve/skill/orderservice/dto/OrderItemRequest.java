@@ -7,8 +7,9 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class OrderItemDto {
+public class OrderItemRequest {
 	private String accountName;
 	private String accountLevel;
 	private String accountNo;
+	private String createBy;
 }

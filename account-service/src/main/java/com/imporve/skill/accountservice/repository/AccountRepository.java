@@ -9,6 +9,7 @@ import com.imporve.skill.accountservice.model.Account;
 
 public interface AccountRepository extends JpaRepository<Account, Long> {
 	Account findByAccountLevelAndAccountNo(String accountLevel, String accountNo);
+	Account findByAccountNo(String accountNo);
 	
 	@Query("select ba from Account ba inner join Account ca on ca.accountId = ba.masterId where ca.accountNo = :masterNo")
 	List<Account> findByMasterNo(String masterNo);

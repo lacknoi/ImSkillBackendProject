@@ -54,6 +54,18 @@ public class AccountService {
 				).toList();
 	}
 	
+	@Transactional(readOnly = true)
+	public AccountResponse getAccountByAccountNo(String accntNo) {
+		Account account = accountRepository.findByAccountNo(accntNo);
+		
+		AccountResponse accountResponse = AccountResponse.builder()
+				.accntNo(account.getAccountNo())
+				.accntName(account.getAccountName())
+				.build();
+		
+		return accountResponse;
+	}
+	
 	public AccountResponse getAccountByaccountLevelAndAccountNo(String accountLevel, String accountNo) {
 		Account account = accountRepository.findByAccountLevelAndAccountNo(accountLevel, accountNo);
 		

@@ -11,7 +11,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import com.imporve.skill.orderservice.dto.AccountRequest;
 import com.imporve.skill.orderservice.dto.AccountResponse;
-import com.imporve.skill.orderservice.dto.OrderItemDto;
+import com.imporve.skill.orderservice.dto.OrderItemRequest;
 import com.imporve.skill.orderservice.dto.OrderRequest;
 import com.imporve.skill.orderservice.model.Order;
 import com.imporve.skill.orderservice.model.OrderItem;
@@ -50,8 +50,8 @@ public class OrderService {
 		}
 	}
 	
-	public void createOrder(OrderRequest orderRequest) {
-		for(OrderItemDto orderItemDto : orderRequest.getOrderItemDtoList()) {
+	public void createOrderList(OrderRequest orderRequest) {
+		for(OrderItemRequest orderItemDto : orderRequest.getOrderItemDtoList()) {
 			boolean blacklistStatus = webClientBuilder.build().get()
 								    .uri("http://debt-service/api/debt/blacklist/" + orderItemDto.getAccountNo())
 								    .retrieve()
@@ -97,7 +97,43 @@ public class OrderService {
 		}
 	}
 	
-	private OrderItem mapToDto(OrderItemDto orderItemDto, Order order) {
+	public void createOrder(OrderItemRequest orderItemRequest) {
+		Order order = new Order();
+		order.setOrderNo("O01");
+		order.setCreated(new Date());
+		order.setCreatedBy(orderItemRequest.getCreateBy());
+		order.setLastUpd(new Date());
+		order.setLastUpdBy(orderItemRequest.getCreateBy());
+		
+		List<OrderItem> orderLineItems = new ArrayList<>();
+		orderLineItems.add(mapToDto(orderItemRequest, order));
+		
+		order.setItems(orderLineItems);
+		
+		orderRepository.save(order);
+		
+		List<AccountRequest> accountRequestList = orderLineItems.stream()
+				.map(orderLineItem ->
+						AccountRequest.builder()
+						.accountLevel(orderLineItem.getAccountLevel())
+						.accountName(orderLineItem.getAccountName()).build()
+					).toList();
+		
+		AccountResponse[] accountArr = webClientBuilder.build().post()
+				.uri("http://account-service/api/account")
+				.body(Mono.just(accountRequestList), AccountRequest.class)
+				.retrieve()
+				.bodyToMono(AccountResponse[].class)
+				.block();
+		
+		List<AccountResponse> accounts = Arrays.asList(accountArr);
+		
+		for(AccountResponse accountResponse : accounts) {
+			System.out.println(accountResponse.getAccountId());
+		}
+	}
+	
+	private OrderItem mapToDto(OrderItemRequest orderItemDto, Order order) {
 		OrderItem orderItem = new OrderItem();
 		orderItem.setOrder(order);
 		orderItem.setAccountLevel(orderItemDto.getAccountLevel());
