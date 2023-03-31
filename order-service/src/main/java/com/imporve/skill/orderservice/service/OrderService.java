@@ -13,6 +13,7 @@ import com.imporve.skill.orderservice.dto.AccountRequest;
 import com.imporve.skill.orderservice.dto.AccountResponse;
 import com.imporve.skill.orderservice.dto.OrderItemRequest;
 import com.imporve.skill.orderservice.dto.OrderRequest;
+import com.imporve.skill.orderservice.dto.OrderResponse;
 import com.imporve.skill.orderservice.model.Order;
 import com.imporve.skill.orderservice.model.OrderItem;
 import com.imporve.skill.orderservice.repository.OrderRepository;
@@ -27,27 +28,56 @@ public class OrderService {
 	private final WebClient.Builder webClientBuilder;
 	private final OrderRepository orderRepository;
 	
-	public void submitOrder(OrderRequest orderRequest) {
-		System.out.println("submitOrder");
+//	public void submitOrder(OrderRequest orderRequest) {
+//		System.out.println("submitOrder");
+//		
+//		Order configFile = orderRepository.getById(1L);
+//		
+//		List<String> baNos = new ArrayList<>();
+//		baNos.add("30900000000168");
+//		baNos.add("31300000806387");
+//		
+//		AccountResponse[] accountArr = webClientBuilder.build().get()
+//				.uri("http://account-service/api/account",
+//						uriBuilder -> uriBuilder.queryParam("baNo", baNos).build())
+//				.retrieve()
+//				.bodyToMono(AccountResponse[].class)
+//				.block();
+//		
+//		List<AccountResponse> accounts = Arrays.asList(accountArr);
+//		
+//		for(AccountResponse accountResponse : accounts) {
+//			System.out.println(accountResponse.getAccntNo() + ":" + accountResponse.getAccntName());
+//		}
+//	}
+	
+	public void deleteOrderByNo(String orderNo) {
+		orderRepository.deleteByOrderNo(orderNo);
+	}
+	
+	public OrderResponse getOrderByNo(String orderNo) {
+		Order order = orderRepository.findByOrderNo(orderNo);
 		
-		Order configFile = orderRepository.getById(1L);
+		if(order == null) return null;
 		
-		List<String> baNos = new ArrayList<>();
-		baNos.add("30900000000168");
-		baNos.add("31300000806387");
+		return OrderResponse.builder().orderId(order.getOrderId())
+							.orderNo(order.getOrderNo())
+							.created(order.getCreated())
+							.createdBy(order.getCreatedBy())
+							.lastUpd(order.getLastUpd())
+							.lastUpdBy(order.getLastUpdBy()).build();
+	}
+	
+	public List<OrderResponse> getOrderList(OrderRequest orderRequest) {
+		List<Order> orderList = orderRepository.findAll();
 		
-		AccountResponse[] accountArr = webClientBuilder.build().get()
-				.uri("http://account-service/api/account",
-						uriBuilder -> uriBuilder.queryParam("baNo", baNos).build())
-				.retrieve()
-				.bodyToMono(AccountResponse[].class)
-				.block();
-		
-		List<AccountResponse> accounts = Arrays.asList(accountArr);
-		
-		for(AccountResponse accountResponse : accounts) {
-			System.out.println(accountResponse.getAccntNo() + ":" + accountResponse.getAccntName());
-		}
+		return orderList.stream().map(order -> OrderResponse.builder()
+										.orderId(order.getOrderId())
+										.orderNo(order.getOrderNo())
+										.created(order.getCreated())
+										.createdBy(order.getCreatedBy())
+										.lastUpd(order.getLastUpd())
+										.lastUpdBy(order.getLastUpdBy()).build()).toList();
 	}
 	
 	public void createOrderList(OrderRequest orderRequest) {
