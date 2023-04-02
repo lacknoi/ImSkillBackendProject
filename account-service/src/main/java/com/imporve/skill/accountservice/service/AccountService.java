@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import com.imporve.skill.accountservice.AppConstant;
+import com.imporve.skill.accountservice.dto.AccountFileWrapperRequest;
 import com.imporve.skill.accountservice.dto.AccountRequest;
 import com.imporve.skill.accountservice.dto.AccountResponse;
 import com.imporve.skill.accountservice.dto.DebtRequest;
@@ -15,25 +17,25 @@ import com.imporve.skill.accountservice.model.Account;
 import com.imporve.skill.accountservice.model.BAInfo;
 import com.imporve.skill.accountservice.repository.AccountRepository;
 import com.imporve.skill.accountservice.repository.BAInfoRepository;
+import com.imporve.skill.accountservice.utils.DateTimeUtils;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class AccountService {
 	private final BAInfoRepository baInfoRepository;
 	private final AccountRepository accountRepository;
 	private final WebClient.Builder webClientBuilder;
 	
-	@Transactional(readOnly = true)
 	public void getAccountBaNo(String accntNo) {
 		BAInfo baInfo = baInfoRepository.findByBaNo(accntNo);
 		
 		System.out.println(baInfo.getBaName());
 	}
 	
-	@Transactional(readOnly = true)
 	public AccountResponse getBAInfoByCaNo(String accntNo) {
 		BAInfo baInfo = baInfoRepository.findByCaNo(accntNo);
 		
@@ -54,7 +56,6 @@ public class AccountService {
 				).toList();
 	}
 	
-	@Transactional(readOnly = true)
 	public AccountResponse getAccountByAccountNo(String accntNo) {
 		Account account = accountRepository.findByAccountNo(accntNo);
 		
@@ -76,14 +77,20 @@ public class AccountService {
 	
 	public List<AccountResponse> getAccountByMasterNo(String accountNo) {
 		return accountRepository.findByMasterNo(accountNo).stream()
-			.map(account ->
-					AccountResponse.builder()
-					.accntNo(account.getAccountNo())
-					.accntName(account.getAccountName()).build()
-				).toList();
+			.map(account -> mapAccountToAccountResponse(account)).toList();
 	}
 	
-	public List<AccountResponse> createAccount(List<AccountRequest> accountRequestList) {
+	public AccountResponse createAccountFileWrapper(AccountFileWrapperRequest accountFileWrapperRequest) {
+		Account account = mapAccountRequestToAccount(accountFileWrapperRequest);
+		
+		account = accountRepository.save(account);
+		
+		AccountResponse accountResponse = mapAccountToAccountResponse(account);
+		
+		return accountResponse;
+	}
+	
+	public List<AccountResponse> createAccounts(List<AccountRequest> accountRequestList) {
 		List<Account> accountList = accountRequestList
 						                .stream()
 						                .map(accountRequest -> mapAccountRequestToAccount(accountRequest))
@@ -92,10 +99,8 @@ public class AccountService {
 		accountList = accountRepository.saveAll(accountList);
 		
 		List<AccountResponse> accountResponseList = accountList.stream()
-												.map(account ->
-														AccountResponse.builder()
-															.accountId(account.getAccountId()).build()
-													).toList();
+												.map(account -> mapAccountToAccountResponse(account))
+												.toList();
 		
 		for(Account account : accountList) {
 			if(StringUtils.equalsIgnoreCase(account.getAccountLevel(), "BA")) {
@@ -118,9 +123,16 @@ public class AccountService {
 		return accountResponseList;
 	}
 	
+	private String generateAccountNo() {
+		String dateFor = DateTimeUtils.formatDate(AppConstant.ACCOUNT_NO_FORMAT, DateTimeUtils.currentDate());
+		Long accountNoSeq = accountRepository.getNextValAccountNoSequence(dateFor + "%");
+		
+		return dateFor + String.format("%04d", accountNoSeq);
+	}
+	
 	private Account mapAccountRequestToAccount(AccountRequest accountRequest) {
 		Account account = new Account();
-		account.setAccountNo("testAccountNo");
+		account.setAccountNo(generateAccountNo());
 		account.setAccountName(accountRequest.getAccountName());
 		account.setAccountLevel(accountRequest.getAccountLevel());
 		account.setCreated(new Date());
@@ -130,4 +142,9 @@ public class AccountService {
 		
         return account;
     }
+	
+	private AccountResponse mapAccountToAccountResponse(Account account) {
+		return AccountResponse.builder()
+		.accountId(account.getAccountId()).build();
+	}
 }

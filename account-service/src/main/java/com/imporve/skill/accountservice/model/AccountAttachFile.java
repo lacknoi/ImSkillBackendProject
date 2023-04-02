@@ -1,38 +1,34 @@
 package com.imporve.skill.accountservice.model;
 
 import java.util.Date;
-import java.util.List;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "TEST_ACCOUNT", schema = "debt")
+@Table(schema = "debt", name = "test_account_attach_file")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Account {
+public class AccountAttachFile {
 	@Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer accountId;
-    private String masterId;
-	private String accountNo;
-	private String accountName;
-	private String accountLevel;
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Integer accountAttachFileId;
+	@ManyToOne
+	@JoinColumn(name = "account_id", nullable = false)
+	private Account account;
+	private String fileName;
+	private String dataType;
 	private Date created;
 	private String createdBy;
 	private Date lastUpd;
 	private String lastUpdBy;
-	
-	//Join
-	@OneToMany(mappedBy = "account", cascade = CascadeType.ALL)
-	private List<AccountAttachFile> accountAttachFiles;
 }

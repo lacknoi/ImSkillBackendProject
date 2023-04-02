@@ -3,6 +3,7 @@ package com.imporve.skill.accountservice.controller;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.imporve.skill.accountservice.dto.AccountFileWrapperRequest;
 import com.imporve.skill.accountservice.dto.AccountRequest;
 import com.imporve.skill.accountservice.dto.AccountResponse;
 import com.imporve.skill.accountservice.service.AccountService;
@@ -64,7 +66,14 @@ public class AccountController {
 	
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
-	public List<AccountResponse> createAccount(@RequestBody List<AccountRequest> accountRequests) {
-        return accountService.createAccount(accountRequests);
+	public List<AccountResponse> createAccounts(@RequestBody List<AccountRequest> accountRequests) {
+        return accountService.createAccounts(accountRequests);
+	}
+	
+	@PostMapping("/create-account-upload-file")
+	public ResponseEntity<AccountResponse> createAccount(AccountFileWrapperRequest accountFileWrapperRequest){
+		AccountResponse accountResponse = accountService.createAccountFileWrapper(accountFileWrapperRequest);
+		
+		return new ResponseEntity<>(accountResponse, HttpStatus.CREATED);
 	}
 }

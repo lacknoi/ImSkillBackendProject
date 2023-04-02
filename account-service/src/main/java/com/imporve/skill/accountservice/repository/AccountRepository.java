@@ -13,4 +13,7 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
 	
 	@Query("select ba from Account ba inner join Account ca on ca.accountId = ba.masterId where ca.accountNo = :masterNo")
 	List<Account> findByMasterNo(String masterNo);
+	
+	@Query(value = "SELECT ISNULL(max(RIGHT(accountNo, 4)) + 1, 1) account_no from Account where accountNo like :accountNo")
+	Long getNextValAccountNoSequence(String accountNo);
 }
