@@ -1,11 +1,13 @@
 package com.imporve.skill.accountservice.service;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.imporve.skill.accountservice.AppConstant;
@@ -14,6 +16,7 @@ import com.imporve.skill.accountservice.dto.AccountRequest;
 import com.imporve.skill.accountservice.dto.AccountResponse;
 import com.imporve.skill.accountservice.dto.DebtRequest;
 import com.imporve.skill.accountservice.model.Account;
+import com.imporve.skill.accountservice.model.AccountAttachFile;
 import com.imporve.skill.accountservice.model.BAInfo;
 import com.imporve.skill.accountservice.repository.AccountRepository;
 import com.imporve.skill.accountservice.repository.BAInfoRepository;
@@ -80,44 +83,48 @@ public class AccountService {
 			.map(account -> mapAccountToAccountResponse(account)).toList();
 	}
 	
-	public AccountResponse createAccountFileWrapper(AccountFileWrapperRequest accountFileWrapperRequest) {
-		Account account = mapAccountRequestToAccount(accountFileWrapperRequest);
+	private AccountResponse generateAccount(AccountRequest accountRequest) {
+		Account account = mapAccountRequestToAccount(accountRequest);
 		
 		account = accountRepository.save(account);
+		
+		if(StringUtils.equalsIgnoreCase(account.getAccountLevel(), "BA")) {
+			DebtRequest debtRequest = DebtRequest.builder()
+					.baNo(account.getAccountNo())
+					.transactionBy(account.getLastUpdBy())
+					.build();
+			
+			webClientBuilder.build().post()
+					.uri("http://debt-service/api/debt/init-account-balance")
+					.body(Mono.just(debtRequest), DebtRequest.class)
+					.retrieve()
+					.bodyToMono(String.class)
+					.block();
+		}
 		
 		AccountResponse accountResponse = mapAccountToAccountResponse(account);
 		
 		return accountResponse;
 	}
 	
+	public AccountResponse createAccount(AccountRequest accountRequest) {
+		AccountResponse accountResponse = generateAccount(accountRequest);
+		
+		return accountResponse;
+	}
+	
+	public AccountResponse createAccountFileWrapper(AccountFileWrapperRequest accountFileWrapperRequest) {
+		AccountResponse accountResponse = generateAccount(accountFileWrapperRequest);
+		
+		return accountResponse;
+	}
+	
 	public List<AccountResponse> createAccounts(List<AccountRequest> accountRequestList) {
-		List<Account> accountList = accountRequestList
-						                .stream()
-						                .map(accountRequest -> mapAccountRequestToAccount(accountRequest))
-						                .toList();
-		
-		accountList = accountRepository.saveAll(accountList);
-		
-		List<AccountResponse> accountResponseList = accountList.stream()
-												.map(account -> mapAccountToAccountResponse(account))
-												.toList();
-		
-		for(Account account : accountList) {
-			if(StringUtils.equalsIgnoreCase(account.getAccountLevel(), "BA")) {
-				System.out.println(" -- > " + account.getAccountNo());
-				
-				DebtRequest debtRequest = DebtRequest.builder()
-						.baNo(account.getAccountNo())
-						.transactionBy(account.getLastUpdBy())
-						.build();
-				
-				webClientBuilder.build().post()
-						.uri("http://debt-service/api/debt/init-account-balance")
-						.body(Mono.just(debtRequest), DebtRequest.class)
-						.retrieve()
-						.bodyToMono(String.class)
-						.block();
-			}
+		List<AccountResponse> accountResponseList = new ArrayList<>();
+		for(AccountRequest accountRequest : accountRequestList) {
+			AccountResponse accountResponse = generateAccount(accountRequest);
+			
+			accountResponseList.add(accountResponse);
 		}
 		
 		return accountResponseList;
@@ -139,6 +146,27 @@ public class AccountService {
 		account.setCreatedBy(accountRequest.getTransactionBy());
 		account.setLastUpd(new Date());
 		account.setLastUpdBy(accountRequest.getTransactionBy());
+		
+		if(accountRequest instanceof AccountFileWrapperRequest) {
+			AccountFileWrapperRequest accountFileWrapperRequest = (AccountFileWrapperRequest) accountRequest;
+			
+			if(accountFileWrapperRequest.getFile() != null) {
+				account.setAccountAttachFiles(new ArrayList<>());
+				
+				MultipartFile multipartFile = accountFileWrapperRequest.getFile();
+				
+				AccountAttachFile accountAttachFile = new AccountAttachFile();
+				accountAttachFile.setAccount(account);
+				accountAttachFile.setFileName(multipartFile.getOriginalFilename());
+				accountAttachFile.setFileType(multipartFile.getContentType());
+				accountAttachFile.setCreated(new Date());
+				accountAttachFile.setCreatedBy(accountRequest.getTransactionBy());
+				accountAttachFile.setLastUpd(new Date());
+				accountAttachFile.setLastUpdBy(accountRequest.getTransactionBy());
+				
+				account.getAccountAttachFiles().add(accountAttachFile);
+			}
+		}
 		
         return account;
     }

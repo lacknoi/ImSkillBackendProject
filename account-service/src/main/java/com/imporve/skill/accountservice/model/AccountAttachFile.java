@@ -11,6 +11,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 @Entity
@@ -18,7 +19,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class AccountAttachFile {
+@EqualsAndHashCode(callSuper=false)
+public class AccountAttachFile{
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Integer accountAttachFileId;
@@ -26,7 +28,7 @@ public class AccountAttachFile {
 	@JoinColumn(name = "account_id", nullable = false)
 	private Account account;
 	private String fileName;
-	private String dataType;
+	private String fileType;
 	private Date created;
 	private String createdBy;
 	private Date lastUpd;

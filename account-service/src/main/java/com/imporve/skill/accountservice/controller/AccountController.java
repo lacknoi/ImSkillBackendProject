@@ -70,8 +70,15 @@ public class AccountController {
         return accountService.createAccounts(accountRequests);
 	}
 	
+	@PostMapping("/create-account")
+	public ResponseEntity<AccountResponse> createAccount(AccountRequest accountRequest){
+		AccountResponse accountResponse = accountService.createAccount(accountRequest);
+		
+		return new ResponseEntity<>(accountResponse, HttpStatus.CREATED);
+	}
+	
 	@PostMapping("/create-account-upload-file")
-	public ResponseEntity<AccountResponse> createAccount(AccountFileWrapperRequest accountFileWrapperRequest){
+	public ResponseEntity<AccountResponse> createAccountFileWrapper(AccountFileWrapperRequest accountFileWrapperRequest){
 		AccountResponse accountResponse = accountService.createAccountFileWrapper(accountFileWrapperRequest);
 		
 		return new ResponseEntity<>(accountResponse, HttpStatus.CREATED);
