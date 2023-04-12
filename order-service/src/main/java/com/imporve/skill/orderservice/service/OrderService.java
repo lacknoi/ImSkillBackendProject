@@ -1,22 +1,35 @@
 package com.imporve.skill.orderservice.service;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
+import org.hibernate.service.spi.ServiceException;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import com.imporve.skill.orderservice.AppConstant;
+import com.imporve.skill.orderservice.dto.AccountFileWrapperRequest;
 import com.imporve.skill.orderservice.dto.AccountRequest;
 import com.imporve.skill.orderservice.dto.AccountResponse;
+import com.imporve.skill.orderservice.dto.OrderItemFileWrapperRequest;
 import com.imporve.skill.orderservice.dto.OrderItemRequest;
 import com.imporve.skill.orderservice.dto.OrderRequest;
 import com.imporve.skill.orderservice.dto.OrderResponse;
 import com.imporve.skill.orderservice.model.Order;
 import com.imporve.skill.orderservice.model.OrderItem;
 import com.imporve.skill.orderservice.repository.OrderRepository;
+import com.imporve.skill.orderservice.utils.DateTimeUtils;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -58,14 +71,7 @@ public class OrderService {
 	public OrderResponse getOrderByNo(String orderNo) {
 		Order order = orderRepository.findByOrderNo(orderNo);
 		
-		if(order == null) return null;
-		
-		return OrderResponse.builder().orderId(order.getOrderId())
-							.orderNo(order.getOrderNo())
-							.created(order.getCreated())
-							.createdBy(order.getCreatedBy())
-							.lastUpd(order.getLastUpd())
-							.lastUpdBy(order.getLastUpdBy()).build();
+		return mapOrderToOrderResponse(order);
 	}
 	
 	public List<OrderResponse> getOrderList(OrderRequest orderRequest) {
@@ -99,7 +105,7 @@ public class OrderService {
 		
 		List<OrderItem> orderLineItems = orderRequest.getOrderItemDtoList()
 							                .stream()
-							                .map(orderItemDto -> mapToDto(orderItemDto, order))
+							                .map(orderItemDto -> mapOrderItemRequestToOrderItem(orderItemDto, order))
 							                .toList();
 		
 		order.setItems(orderLineItems);
@@ -127,43 +133,41 @@ public class OrderService {
 		}
 	}
 	
-	public void createOrder(OrderItemRequest orderItemRequest) {
+	private String generateOrderNo() {
+		String dateFor = DateTimeUtils.formatDate(AppConstant.ORDER_NO_FORMAT, DateTimeUtils.currentDate());
+		Long accountNoSeq = orderRepository.getNextValOrderNoSequence(dateFor + "%");
+		
+		return dateFor + String.format("%04d", accountNoSeq);
+	}
+	
+	private OrderResponse mapOrderToOrderResponse(Order order) {
+		if(order == null) return new OrderResponse();
+		
+		return OrderResponse.builder().orderId(order.getOrderId())
+							.orderNo(order.getOrderNo())
+							.created(order.getCreated())
+							.createdBy(order.getCreatedBy())
+							.lastUpd(order.getLastUpd())
+							.lastUpdBy(order.getLastUpdBy()).build();
+	}
+	
+	private Order mapOrderItemRequestToOrder(OrderItemRequest orderItemRequest) {
 		Order order = new Order();
-		order.setOrderNo("O01");
+		order.setOrderNo(generateOrderNo());
 		order.setCreated(new Date());
 		order.setCreatedBy(orderItemRequest.getCreateBy());
 		order.setLastUpd(new Date());
 		order.setLastUpdBy(orderItemRequest.getCreateBy());
 		
 		List<OrderItem> orderLineItems = new ArrayList<>();
-		orderLineItems.add(mapToDto(orderItemRequest, order));
+		orderLineItems.add(mapOrderItemRequestToOrderItem(orderItemRequest, order));
 		
 		order.setItems(orderLineItems);
 		
-		orderRepository.save(order);
-		
-		List<AccountRequest> accountRequestList = orderLineItems.stream()
-				.map(orderLineItem ->
-						AccountRequest.builder()
-						.accountLevel(orderLineItem.getAccountLevel())
-						.accountName(orderLineItem.getAccountName()).build()
-					).toList();
-		
-		AccountResponse[] accountArr = webClientBuilder.build().post()
-				.uri("http://account-service/api/account")
-				.body(Mono.just(accountRequestList), AccountRequest.class)
-				.retrieve()
-				.bodyToMono(AccountResponse[].class)
-				.block();
-		
-		List<AccountResponse> accounts = Arrays.asList(accountArr);
-		
-		for(AccountResponse accountResponse : accounts) {
-			System.out.println(accountResponse.getAccountId());
-		}
+		return order;
 	}
 	
-	private OrderItem mapToDto(OrderItemRequest orderItemDto, Order order) {
+	private OrderItem mapOrderItemRequestToOrderItem(OrderItemRequest orderItemDto, Order order) {
 		OrderItem orderItem = new OrderItem();
 		orderItem.setOrder(order);
 		orderItem.setAccountLevel(orderItemDto.getAccountLevel());
@@ -175,4 +179,63 @@ public class OrderService {
 		
         return orderItem;
     }
+	
+	public OrderResponse createOrderFileWrapper(OrderItemFileWrapperRequest fileWrapperRequest) {
+		return createOrder(fileWrapperRequest);
+	}
+	
+	public MultiValueMap<String, HttpEntity<?>> fromFile(File file) {
+        MultipartBodyBuilder builder = new MultipartBodyBuilder();
+        builder.part("file", new FileSystemResource(file));
+        return builder.build();
+    }
+	
+	public OrderResponse createOrder(OrderItemRequest orderItemRequest) {
+		Order order = mapOrderItemRequestToOrder(orderItemRequest);
+		
+		orderRepository.save(order);
+		
+		if(orderItemRequest instanceof OrderItemFileWrapperRequest) {
+			OrderItemFileWrapperRequest fileWrapperRequest = (OrderItemFileWrapperRequest) orderItemRequest;
+			
+			AccountFileWrapperRequest request = new AccountFileWrapperRequest();
+			request.setAccountLevel(orderItemRequest.getAccountLevel());
+			request.setAccountName(orderItemRequest.getAccountName());
+			request.setTransactionBy(orderItemRequest.getCreateBy());
+			request.setFile(fileWrapperRequest.getFile());
+			
+			MultipartBodyBuilder builder = new MultipartBodyBuilder();
+			builder.part("accountName", orderItemRequest.getAccountName());
+			builder.part("accountLevel", orderItemRequest.getAccountLevel());
+			builder.part("transactionBy", orderItemRequest.getCreateBy());
+			builder.part("file", fileWrapperRequest.getFile().getResource());
+			
+			webClientBuilder.build().post()
+							.uri("http://account-service/api/account/create-account-upload-file")
+							.contentType(MediaType.MULTIPART_FORM_DATA)
+							.body(BodyInserters.fromMultipartData(builder.build()))
+							.retrieve()
+			                .bodyToMono(String.class)   
+			                .block();
+		}
+		
+		
+//		List<AccountRequest> accountRequestList = order.getItems().stream()
+//				.map(orderLineItem ->
+//						AccountRequest.builder()
+//						.accountLevel(orderLineItem.getAccountLevel())
+//						.accountName(orderLineItem.getAccountName()).build()
+//					).toList();
+//		
+//		AccountResponse[] accountArr = webClientBuilder.build().post()
+//				.uri("http://account-service/api/account")
+//				.body(Mono.just(accountRequestList), AccountRequest.class)
+//				.retrieve()
+//				.bodyToMono(AccountResponse[].class)
+//				.block();
+//		
+//		List<AccountResponse> accounts = Arrays.asList(accountArr);
+		
+		return mapOrderToOrderResponse(order);
+	}
 }

@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.imporve.skill.orderservice.dto.OrderItemFileWrapperRequest;
 import com.imporve.skill.orderservice.dto.OrderItemRequest;
 import com.imporve.skill.orderservice.dto.OrderRequest;
 import com.imporve.skill.orderservice.dto.OrderResponse;
@@ -60,15 +61,11 @@ public class OrderController {
 		 
 		return new ResponseEntity<>("createOrder", HttpStatus.OK);
 	}
-	 
-//	@PostMapping("/create-order")
-////	@ResponseStatus(HttpStatus.CREATED)
-//	public ResponseEntity<String> createOrder(@RequestBody OrderItemRequest orderItemRequest
-//			 									, @RequestParam("file") MultipartFile file) {
-//		 
-//		 
-//		orderService.createOrder(orderItemRequest);
-//		 
-//		return new ResponseEntity<>("createOrder", HttpStatus.OK);
-//	}
+	
+	@PostMapping("/create-order-upload-file")
+	public ResponseEntity<String> createOrderFileWrapper(OrderItemFileWrapperRequest fileWrapperRequest) {
+		orderService.createOrderFileWrapper(fileWrapperRequest);
+		 
+		return new ResponseEntity<>("createOrder", HttpStatus.CREATED);
+	}
 }
