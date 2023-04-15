@@ -62,7 +62,8 @@ public class OrderController {
 	}
 	
 	@PostMapping("/approve-order")
-	public ResponseEntity<String> approveOrder(@RequestBody OrderRequest itemRequest) {
+	public ResponseEntity<String> approveOrder(@RequestBody OrderRequest orderRequest) throws IOException {
+		orderService.approveOrder(orderRequest);
 		 
 		return new ResponseEntity<>("createOrder", HttpStatus.CREATED);
 	}

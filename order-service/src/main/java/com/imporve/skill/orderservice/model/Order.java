@@ -26,6 +26,7 @@ public class Order {
 	private String orderNo;
 	private String orderType;
 	private String statusCd;
+	private String accountName;
 	private Date created;
 	private String createdBy;
 	private Date lastUpd;

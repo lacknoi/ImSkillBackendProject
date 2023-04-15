@@ -4,6 +4,7 @@ create table debt.TEST_ORDER(
 	, ORDER_NO varchar(10)
 	, ORDER_TYPE varchar(50)
 	, STATUS_CD varchar(50)
+	, ACCOUNT_NAME varchar(50)
 	, CREATED datetime
 	, CREATED_BY varchar(50)
 	, LAST_UPD datetime

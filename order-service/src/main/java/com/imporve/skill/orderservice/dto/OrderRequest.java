@@ -11,4 +11,5 @@ public class OrderRequest {
 	private String accountName;
 	private String userName;
 	private String orderType;
+	private String orderNo;
 }

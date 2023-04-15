@@ -6,15 +6,20 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.MediaType;
 import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.imporve.skill.orderservice.AppConstant;
+import com.imporve.skill.orderservice.dto.AccountFileWrapperRequest;
 import com.imporve.skill.orderservice.dto.OrderFileWrapperRequest;
 import com.imporve.skill.orderservice.dto.OrderRequest;
 import com.imporve.skill.orderservice.dto.OrderResponse;
@@ -107,6 +112,7 @@ public class OrderService {
 		order.setLastUpdBy(orderRequest.getUserName());
 		order.setOrderType(orderRequest.getOrderType());
 		order.setStatusCd(AppConstant.STATUS_OPEN);
+		order.setAccountName(orderRequest.getAccountName());
 		
 		if(orderRequest instanceof OrderFileWrapperRequest) {
 			List<OrderAttachFile> attachFileList = new ArrayList<>();
@@ -152,31 +158,32 @@ public class OrderService {
         return builder.build();
     }
 	
-//	public OrderResponse approveOrder(OrderRequest orderRequest) {
-//		Order order = orderRepository.findByOrderNo(orderRequest.getOrderNo());
-//		
-//		if(orderRequest instanceof OrderFileWrapperRequest) {
-//			OrderFileWrapperRequest fileWrapperRequest = (OrderFileWrapperRequest) orderRequest;
-//			
-//			AccountFileWrapperRequest request = new AccountFileWrapperRequest();
-//			request.setAccountName(orderRequest.getAccountName());
-//			request.setTransactionBy(orderRequest.getUserName());
-//			request.setFile(fileWrapperRequest.getFile());
-//			
-//			MultipartBodyBuilder builder = new MultipartBodyBuilder();
-//			builder.part("accountName", orderRequest.getAccountName());
-//			builder.part("transactionBy", orderRequest.getUserName());
-//			builder.part("file", fileWrapperRequest.getFile().getResource());
-//			
-//			webClientBuilder.build().post()
-//							.uri("http://account-service/api/account/create-account-upload-file")
-//							.contentType(MediaType.MULTIPART_FORM_DATA)
-//							.body(BodyInserters.fromMultipartData(builder.build()))
-//							.retrieve()
-//			                .bodyToMono(String.class)   
-//			                .block();
-//		}
-//	}
+	public void approveOrder(OrderRequest orderRequest) throws IOException {
+		Order order = orderRepository.findByOrderNo(orderRequest.getOrderNo());
+		
+		if(StringUtils.equalsIgnoreCase(order.getOrderType(), AppConstant.ORDER_TYPE_REGISTER_ACCOUNT)) {
+			MultipartBodyBuilder builder = new MultipartBodyBuilder();
+			builder.part("accountName", order.getAccountName());
+			builder.part("transactionBy", order.getLastUpdBy());
+			
+
+			if(order.getItems() != null && !order.getItems().isEmpty()) {
+				String path = configRepository.getPath("ORDER_ATTACH_FILE");
+				
+				Resource file = FileUtils.getResourceFromFileName(path, order.getItems().get(0).getFileName());
+				
+				builder.part("file", file);
+			}
+			
+			webClientBuilder.build().post()
+						.uri("http://account-service/api/account/create-account-upload-file")
+						.contentType(MediaType.MULTIPART_FORM_DATA)
+						.body(BodyInserters.fromMultipartData(builder.build()))
+						.retrieve()
+			            .bodyToMono(String.class)   
+			            .block();
+		}
+	}
 	
 	public OrderResponse createOrder(OrderRequest orderRequest) {
 		Order order = mapOrderRequestToOrder(orderRequest);
