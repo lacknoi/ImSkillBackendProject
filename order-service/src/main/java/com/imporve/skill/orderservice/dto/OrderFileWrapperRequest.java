@@ -11,6 +11,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper=false)
-public class OrderItemFileWrapperRequest extends OrderItemRequest{
+public class OrderFileWrapperRequest extends OrderRequest{
 	private MultipartFile file;
 }

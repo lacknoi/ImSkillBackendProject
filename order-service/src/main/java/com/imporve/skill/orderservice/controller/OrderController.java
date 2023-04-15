@@ -1,5 +1,6 @@
 package com.imporve.skill.orderservice.controller;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
@@ -13,8 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.imporve.skill.orderservice.dto.OrderItemFileWrapperRequest;
-import com.imporve.skill.orderservice.dto.OrderItemRequest;
+import com.imporve.skill.orderservice.dto.OrderFileWrapperRequest;
 import com.imporve.skill.orderservice.dto.OrderRequest;
 import com.imporve.skill.orderservice.dto.OrderResponse;
 import com.imporve.skill.orderservice.service.OrderService;
@@ -47,24 +47,22 @@ public class OrderController {
         return orderService.getOrderList(null);
 	}
 	 
-	@PostMapping
-	public ResponseEntity<String> createOrderList(@RequestBody OrderRequest orderRequest) {
-		orderService.createOrderList(orderRequest);
-		 
-        return new ResponseEntity<>("createOrderList", HttpStatus.OK);
-	}
-	 
 	@PostMapping("/create-order")
-//	 @ResponseStatus(HttpStatus.CREATED)
-	public ResponseEntity<String> createOrder(@RequestBody OrderItemRequest orderItemRequest) {
+	public ResponseEntity<String> createOrder(@RequestBody OrderRequest orderItemRequest) {
 		orderService.createOrder(orderItemRequest);
 		 
 		return new ResponseEntity<>("createOrder", HttpStatus.OK);
 	}
 	
-	@PostMapping("/create-order-upload-file")
-	public ResponseEntity<String> createOrderFileWrapper(OrderItemFileWrapperRequest fileWrapperRequest) {
-		orderService.createOrderFileWrapper(fileWrapperRequest);
+	@PostMapping("/create-account")
+	public ResponseEntity<OrderResponse> requestCreateAccount(OrderFileWrapperRequest fileWrapperRequest) throws IOException {
+		OrderResponse orderResponse = orderService.requestCreateAccount(fileWrapperRequest);
+		 
+		return new ResponseEntity<>(orderResponse, HttpStatus.CREATED);
+	}
+	
+	@PostMapping("/approve-order")
+	public ResponseEntity<String> approveOrder(@RequestBody OrderRequest itemRequest) {
 		 
 		return new ResponseEntity<>("createOrder", HttpStatus.CREATED);
 	}

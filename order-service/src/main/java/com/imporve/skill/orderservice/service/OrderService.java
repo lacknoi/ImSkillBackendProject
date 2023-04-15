@@ -1,38 +1,31 @@
 package com.imporve.skill.orderservice.service;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
-import org.hibernate.service.spi.ServiceException;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.imporve.skill.orderservice.AppConstant;
-import com.imporve.skill.orderservice.dto.AccountFileWrapperRequest;
-import com.imporve.skill.orderservice.dto.AccountRequest;
-import com.imporve.skill.orderservice.dto.AccountResponse;
-import com.imporve.skill.orderservice.dto.OrderItemFileWrapperRequest;
-import com.imporve.skill.orderservice.dto.OrderItemRequest;
+import com.imporve.skill.orderservice.dto.OrderFileWrapperRequest;
 import com.imporve.skill.orderservice.dto.OrderRequest;
 import com.imporve.skill.orderservice.dto.OrderResponse;
 import com.imporve.skill.orderservice.model.Order;
-import com.imporve.skill.orderservice.model.OrderItem;
+import com.imporve.skill.orderservice.model.OrderAttachFile;
+import com.imporve.skill.orderservice.repository.ConfigRepository;
 import com.imporve.skill.orderservice.repository.OrderRepository;
 import com.imporve.skill.orderservice.utils.DateTimeUtils;
+import com.imporve.skill.orderservice.utils.FileUtils;
 
 import lombok.RequiredArgsConstructor;
-import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
@@ -40,6 +33,7 @@ import reactor.core.publisher.Mono;
 public class OrderService {
 	private final WebClient.Builder webClientBuilder;
 	private final OrderRepository orderRepository;
+	private final ConfigRepository configRepository;
 	
 //	public void submitOrder(OrderRequest orderRequest) {
 //		System.out.println("submitOrder");
@@ -86,53 +80,6 @@ public class OrderService {
 										.lastUpdBy(order.getLastUpdBy()).build()).toList();
 	}
 	
-	public void createOrderList(OrderRequest orderRequest) {
-		for(OrderItemRequest orderItemDto : orderRequest.getOrderItemDtoList()) {
-			boolean blacklistStatus = webClientBuilder.build().get()
-								    .uri("http://debt-service/api/debt/blacklist/" + orderItemDto.getAccountNo())
-								    .retrieve()
-								    .bodyToMono(Boolean.class)
-								    .block();
-		}
-				
-		
-		Order order = new Order();
-		order.setOrderNo("O01");
-		order.setCreated(new Date());
-		order.setCreatedBy(orderRequest.getOrderBy());
-		order.setLastUpd(new Date());
-		order.setLastUpdBy(orderRequest.getOrderBy());
-		
-		List<OrderItem> orderLineItems = orderRequest.getOrderItemDtoList()
-							                .stream()
-							                .map(orderItemDto -> mapOrderItemRequestToOrderItem(orderItemDto, order))
-							                .toList();
-		
-		order.setItems(orderLineItems);
-		
-		orderRepository.save(order);
-		
-		List<AccountRequest> accountRequestList = orderRequest.getOrderItemDtoList().stream()
-				.map(orderItemDto ->
-						AccountRequest.builder()
-						.accountLevel(orderItemDto.getAccountLevel())
-						.accountName(orderItemDto.getAccountName()).build()
-					).toList();
-		
-		AccountResponse[] accountArr = webClientBuilder.build().post()
-				.uri("http://account-service/api/account")
-				.body(Mono.just(accountRequestList), AccountRequest.class)
-				.retrieve()
-				.bodyToMono(AccountResponse[].class)
-				.block();
-		
-		List<AccountResponse> accounts = Arrays.asList(accountArr);
-		
-		for(AccountResponse accountResponse : accounts) {
-			System.out.println(accountResponse.getAccountId());
-		}
-	}
-	
 	private String generateOrderNo() {
 		String dateFor = DateTimeUtils.formatDate(AppConstant.ORDER_NO_FORMAT, DateTimeUtils.currentDate());
 		Long accountNoSeq = orderRepository.getNextValOrderNoSequence(dateFor + "%");
@@ -151,37 +98,52 @@ public class OrderService {
 							.lastUpdBy(order.getLastUpdBy()).build();
 	}
 	
-	private Order mapOrderItemRequestToOrder(OrderItemRequest orderItemRequest) {
+	private Order mapOrderRequestToOrder(OrderRequest orderRequest) {
 		Order order = new Order();
 		order.setOrderNo(generateOrderNo());
 		order.setCreated(new Date());
-		order.setCreatedBy(orderItemRequest.getCreateBy());
+		order.setCreatedBy(orderRequest.getUserName());
 		order.setLastUpd(new Date());
-		order.setLastUpdBy(orderItemRequest.getCreateBy());
+		order.setLastUpdBy(orderRequest.getUserName());
+		order.setOrderType(orderRequest.getOrderType());
+		order.setStatusCd(AppConstant.STATUS_OPEN);
 		
-		List<OrderItem> orderLineItems = new ArrayList<>();
-		orderLineItems.add(mapOrderItemRequestToOrderItem(orderItemRequest, order));
-		
-		order.setItems(orderLineItems);
+		if(orderRequest instanceof OrderFileWrapperRequest) {
+			List<OrderAttachFile> attachFileList = new ArrayList<>();
+			
+			OrderFileWrapperRequest fileWrapperRequest = (OrderFileWrapperRequest) orderRequest;
+			
+			OrderAttachFile attachFile = new OrderAttachFile();
+			attachFile.setOrder(order);
+			attachFile.setFileName(order.getOrderNo() + "_" + fileWrapperRequest.getFile().getOriginalFilename());
+			attachFile.setOriginalFileName(fileWrapperRequest.getFile().getOriginalFilename());
+			attachFile.setFileType(fileWrapperRequest.getFile().getContentType());
+			attachFile.setCreated(new Date());
+			attachFile.setCreatedBy(order.getLastUpdBy());
+			attachFile.setLastUpd(new Date());
+			attachFile.setLastUpdBy(order.getLastUpdBy());
+			
+			attachFileList.add(attachFile);
+			
+			order.setItems(attachFileList);
+		}
 		
 		return order;
 	}
 	
-	private OrderItem mapOrderItemRequestToOrderItem(OrderItemRequest orderItemDto, Order order) {
-		OrderItem orderItem = new OrderItem();
-		orderItem.setOrder(order);
-		orderItem.setAccountLevel(orderItemDto.getAccountLevel());
-		orderItem.setAccountName(orderItemDto.getAccountName());
-		orderItem.setCreated(new Date());
-		orderItem.setCreatedBy(order.getLastUpdBy());
-		orderItem.setLastUpd(new Date());
-		orderItem.setLastUpdBy(order.getLastUpdBy());
+	public OrderResponse requestCreateAccount(OrderFileWrapperRequest fileWrapperRequest) throws IOException {
+		fileWrapperRequest.setOrderType(AppConstant.ORDER_TYPE_REGISTER_ACCOUNT);
 		
-        return orderItem;
-    }
-	
-	public OrderResponse createOrderFileWrapper(OrderItemFileWrapperRequest fileWrapperRequest) {
-		return createOrder(fileWrapperRequest);
+		OrderResponse orderResponse = createOrder(fileWrapperRequest);
+		
+		if(fileWrapperRequest.getFile() != null) {
+			String path = configRepository.getPath("ORDER_ATTACH_FILE");
+			String fileName = orderResponse.getOrderNo() + "_" + fileWrapperRequest.getFile().getOriginalFilename();
+			
+			FileUtils.saveFile(fileName, path, fileWrapperRequest.getFile());
+		}
+		
+		return orderResponse;
 	}
 	
 	public MultiValueMap<String, HttpEntity<?>> fromFile(File file) {
@@ -190,51 +152,36 @@ public class OrderService {
         return builder.build();
     }
 	
-	public OrderResponse createOrder(OrderItemRequest orderItemRequest) {
-		Order order = mapOrderItemRequestToOrder(orderItemRequest);
+//	public OrderResponse approveOrder(OrderRequest orderRequest) {
+//		Order order = orderRepository.findByOrderNo(orderRequest.getOrderNo());
+//		
+//		if(orderRequest instanceof OrderFileWrapperRequest) {
+//			OrderFileWrapperRequest fileWrapperRequest = (OrderFileWrapperRequest) orderRequest;
+//			
+//			AccountFileWrapperRequest request = new AccountFileWrapperRequest();
+//			request.setAccountName(orderRequest.getAccountName());
+//			request.setTransactionBy(orderRequest.getUserName());
+//			request.setFile(fileWrapperRequest.getFile());
+//			
+//			MultipartBodyBuilder builder = new MultipartBodyBuilder();
+//			builder.part("accountName", orderRequest.getAccountName());
+//			builder.part("transactionBy", orderRequest.getUserName());
+//			builder.part("file", fileWrapperRequest.getFile().getResource());
+//			
+//			webClientBuilder.build().post()
+//							.uri("http://account-service/api/account/create-account-upload-file")
+//							.contentType(MediaType.MULTIPART_FORM_DATA)
+//							.body(BodyInserters.fromMultipartData(builder.build()))
+//							.retrieve()
+//			                .bodyToMono(String.class)   
+//			                .block();
+//		}
+//	}
+	
+	public OrderResponse createOrder(OrderRequest orderRequest) {
+		Order order = mapOrderRequestToOrder(orderRequest);
 		
 		orderRepository.save(order);
-		
-		if(orderItemRequest instanceof OrderItemFileWrapperRequest) {
-			OrderItemFileWrapperRequest fileWrapperRequest = (OrderItemFileWrapperRequest) orderItemRequest;
-			
-			AccountFileWrapperRequest request = new AccountFileWrapperRequest();
-			request.setAccountLevel(orderItemRequest.getAccountLevel());
-			request.setAccountName(orderItemRequest.getAccountName());
-			request.setTransactionBy(orderItemRequest.getCreateBy());
-			request.setFile(fileWrapperRequest.getFile());
-			
-			MultipartBodyBuilder builder = new MultipartBodyBuilder();
-			builder.part("accountName", orderItemRequest.getAccountName());
-			builder.part("accountLevel", orderItemRequest.getAccountLevel());
-			builder.part("transactionBy", orderItemRequest.getCreateBy());
-			builder.part("file", fileWrapperRequest.getFile().getResource());
-			
-			webClientBuilder.build().post()
-							.uri("http://account-service/api/account/create-account-upload-file")
-							.contentType(MediaType.MULTIPART_FORM_DATA)
-							.body(BodyInserters.fromMultipartData(builder.build()))
-							.retrieve()
-			                .bodyToMono(String.class)   
-			                .block();
-		}
-		
-		
-//		List<AccountRequest> accountRequestList = order.getItems().stream()
-//				.map(orderLineItem ->
-//						AccountRequest.builder()
-//						.accountLevel(orderLineItem.getAccountLevel())
-//						.accountName(orderLineItem.getAccountName()).build()
-//					).toList();
-//		
-//		AccountResponse[] accountArr = webClientBuilder.build().post()
-//				.uri("http://account-service/api/account")
-//				.body(Mono.just(accountRequestList), AccountRequest.class)
-//				.retrieve()
-//				.bodyToMono(AccountResponse[].class)
-//				.block();
-//		
-//		List<AccountResponse> accounts = Arrays.asList(accountArr);
 		
 		return mapOrderToOrderResponse(order);
 	}

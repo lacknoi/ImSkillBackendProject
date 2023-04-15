@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -14,7 +13,6 @@ import com.imporve.skill.accountservice.AppConstant;
 import com.imporve.skill.accountservice.dto.AccountFileWrapperRequest;
 import com.imporve.skill.accountservice.dto.AccountRequest;
 import com.imporve.skill.accountservice.dto.AccountResponse;
-import com.imporve.skill.accountservice.dto.DebtRequest;
 import com.imporve.skill.accountservice.model.Account;
 import com.imporve.skill.accountservice.model.AccountAttachFile;
 import com.imporve.skill.accountservice.model.BAInfo;
@@ -23,7 +21,6 @@ import com.imporve.skill.accountservice.repository.BAInfoRepository;
 import com.imporve.skill.accountservice.utils.DateTimeUtils;
 
 import lombok.RequiredArgsConstructor;
-import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
@@ -88,19 +85,19 @@ public class AccountService {
 		
 		account = accountRepository.save(account);
 		
-		if(StringUtils.equalsIgnoreCase(account.getAccountLevel(), "BA")) {
-			DebtRequest debtRequest = DebtRequest.builder()
-					.baNo(account.getAccountNo())
-					.transactionBy(account.getLastUpdBy())
-					.build();
-			
-			webClientBuilder.build().post()
-					.uri("http://debt-service/api/debt/init-account-balance")
-					.body(Mono.just(debtRequest), DebtRequest.class)
-					.retrieve()
-					.bodyToMono(String.class)
-					.block();
-		}
+//		if(StringUtils.equalsIgnoreCase(account.getAccountLevel(), "BA")) {
+//			DebtRequest debtRequest = DebtRequest.builder()
+//					.baNo(account.getAccountNo())
+//					.transactionBy(account.getLastUpdBy())
+//					.build();
+//			
+//			webClientBuilder.build().post()
+//					.uri("http://debt-service/api/debt/init-account-balance")
+//					.body(Mono.just(debtRequest), DebtRequest.class)
+//					.retrieve()
+//					.bodyToMono(String.class)
+//					.block();
+//		}
 		
 		AccountResponse accountResponse = mapAccountToAccountResponse(account);
 		
