@@ -1,15 +1,18 @@
 package com.imporve.skill.accountservice.service;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.imporve.skill.accountservice.AppConstant;
+import com.imporve.skill.accountservice.dto.AccountBalanceRequest;
 import com.imporve.skill.accountservice.dto.AccountFileWrapperRequest;
 import com.imporve.skill.accountservice.dto.AccountRequest;
 import com.imporve.skill.accountservice.dto.AccountResponse;
@@ -18,9 +21,12 @@ import com.imporve.skill.accountservice.model.AccountAttachFile;
 import com.imporve.skill.accountservice.model.BAInfo;
 import com.imporve.skill.accountservice.repository.AccountRepository;
 import com.imporve.skill.accountservice.repository.BAInfoRepository;
+import com.imporve.skill.accountservice.repository.ConfigRepository;
 import com.imporve.skill.accountservice.utils.DateTimeUtils;
+import com.imporve.skill.accountservice.utils.FileUtils;
 
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +35,7 @@ public class AccountService {
 	private final BAInfoRepository baInfoRepository;
 	private final AccountRepository accountRepository;
 	private final WebClient.Builder webClientBuilder;
+	private final ConfigRepository configRepository;
 	
 	public void getAccountBaNo(String accntNo) {
 		BAInfo baInfo = baInfoRepository.findByBaNo(accntNo);
@@ -85,19 +92,16 @@ public class AccountService {
 		
 		account = accountRepository.save(account);
 		
-//		if(StringUtils.equalsIgnoreCase(account.getAccountLevel(), "BA")) {
-//			DebtRequest debtRequest = DebtRequest.builder()
-//					.baNo(account.getAccountNo())
-//					.transactionBy(account.getLastUpdBy())
-//					.build();
-//			
-//			webClientBuilder.build().post()
-//					.uri("http://debt-service/api/debt/init-account-balance")
-//					.body(Mono.just(debtRequest), DebtRequest.class)
-//					.retrieve()
-//					.bodyToMono(String.class)
-//					.block();
-//		}
+		AccountBalanceRequest accountBalanceRequest = AccountBalanceRequest.builder()
+					.accountNo(account.getAccountNo())
+					.build();
+			
+		ResponseEntity<String> response = webClientBuilder.build().post()
+				.uri("http://transaction-service/api/transaction/init-account-balance")
+				.body(Mono.just(accountBalanceRequest), AccountBalanceRequest.class)
+				.retrieve()
+				.toEntity(String.class)
+				.block();
 		
 		AccountResponse accountResponse = mapAccountToAccountResponse(account);
 		
@@ -110,8 +114,15 @@ public class AccountService {
 		return accountResponse;
 	}
 	
-	public AccountResponse createAccountFileWrapper(AccountFileWrapperRequest accountFileWrapperRequest) {
+	public AccountResponse createAccountFileWrapper(AccountFileWrapperRequest accountFileWrapperRequest) throws IOException {
 		AccountResponse accountResponse = generateAccount(accountFileWrapperRequest);
+		
+		if(accountFileWrapperRequest.getFile() != null) {
+			String path = configRepository.getPath("ORDER_ATTACH_FILE");
+			String fileName = accountResponse.getAccntNo() + "_" + accountFileWrapperRequest.getFile().getOriginalFilename();
+			
+			FileUtils.saveFile(fileName, path, accountFileWrapperRequest.getFile());
+		}
 		
 		return accountResponse;
 	}

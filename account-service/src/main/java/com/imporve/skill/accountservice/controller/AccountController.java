@@ -1,5 +1,6 @@
 package com.imporve.skill.accountservice.controller;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
@@ -78,7 +79,7 @@ public class AccountController {
 	}
 	
 	@PostMapping("/create-account-upload-file")
-	public ResponseEntity<AccountResponse> createAccountFileWrapper(AccountFileWrapperRequest accountFileWrapperRequest){
+	public ResponseEntity<AccountResponse> createAccountFileWrapper(AccountFileWrapperRequest accountFileWrapperRequest) throws IOException{
 		AccountResponse accountResponse = accountService.createAccountFileWrapper(accountFileWrapperRequest);
 		
 		return new ResponseEntity<>(accountResponse, HttpStatus.CREATED);
