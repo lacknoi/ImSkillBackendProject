@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
 public class OrderResponse {
 	private Integer orderId;
 	private String orderNo;
+	private String status;
 	private Date created;
 	private String createdBy;
 	private Date lastUpd;

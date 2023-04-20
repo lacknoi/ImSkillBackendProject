@@ -6,5 +6,5 @@ import com.imporve.skill.transactionservice.model.AccountBalance;
 
 
 public interface AccountBalanceRepository extends JpaRepository<AccountBalance, Integer> {
-
+	AccountBalance findByAccountNo(String accountNo);
 }

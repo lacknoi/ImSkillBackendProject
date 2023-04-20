@@ -19,7 +19,6 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.imporve.skill.orderservice.AppConstant;
-import com.imporve.skill.orderservice.dto.AccountFileWrapperRequest;
 import com.imporve.skill.orderservice.dto.OrderFileWrapperRequest;
 import com.imporve.skill.orderservice.dto.OrderRequest;
 import com.imporve.skill.orderservice.dto.OrderResponse;
@@ -76,13 +75,7 @@ public class OrderService {
 	public List<OrderResponse> getOrderList(OrderRequest orderRequest) {
 		List<Order> orderList = orderRepository.findAll();
 		
-		return orderList.stream().map(order -> OrderResponse.builder()
-										.orderId(order.getOrderId())
-										.orderNo(order.getOrderNo())
-										.created(order.getCreated())
-										.createdBy(order.getCreatedBy())
-										.lastUpd(order.getLastUpd())
-										.lastUpdBy(order.getLastUpdBy()).build()).toList();
+		return orderList.stream().map(order -> mapOrderToOrderResponse(order)).toList();
 	}
 	
 	private String generateOrderNo() {
@@ -97,6 +90,7 @@ public class OrderService {
 		
 		return OrderResponse.builder().orderId(order.getOrderId())
 							.orderNo(order.getOrderNo())
+							.status(order.getStatusCd())
 							.created(order.getCreated())
 							.createdBy(order.getCreatedBy())
 							.lastUpd(order.getLastUpd())
@@ -187,6 +181,18 @@ public class OrderService {
 	
 	public OrderResponse createOrder(OrderRequest orderRequest) {
 		Order order = mapOrderRequestToOrder(orderRequest);
+		
+		orderRepository.save(order);
+		
+		return mapOrderToOrderResponse(order);
+	}
+	
+	public OrderResponse updateOrder(OrderRequest orderRequest) {
+		Order order = orderRepository.findByOrderNo(orderRequest.getOrderNo());
+		
+		order.setAccountName(orderRequest.getAccountName());
+		order.setLastUpdBy(orderRequest.getUserName());
+		order.setLastUpd(new Date());
 		
 		orderRepository.save(order);
 		

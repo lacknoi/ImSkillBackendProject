@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -48,8 +49,8 @@ public class OrderController {
 	}
 	 
 	@PostMapping("/create-order")
-	public ResponseEntity<String> createOrder(@RequestBody OrderRequest orderItemRequest) {
-		orderService.createOrder(orderItemRequest);
+	public ResponseEntity<String> createOrder(@RequestBody OrderRequest orderRequest) {
+		orderService.createOrder(orderRequest);
 		 
 		return new ResponseEntity<>("createOrder", HttpStatus.OK);
 	}
@@ -66,5 +67,12 @@ public class OrderController {
 		orderService.approveOrder(orderRequest);
 		 
 		return new ResponseEntity<>("createOrder", HttpStatus.CREATED);
+	}
+	
+	@PutMapping("/update-order")
+	public ResponseEntity<OrderResponse> updateOrder(@RequestBody OrderRequest orderRequest) throws IOException {
+		OrderResponse orderResponse = orderService.updateOrder(orderRequest);
+		 
+		return new ResponseEntity<>(orderResponse, HttpStatus.OK);
 	}
 }

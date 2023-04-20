@@ -9,7 +9,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.imporve.skill.transactionservice.dto.AccountBalanceRequest;
-import com.imporve.skill.transactionservice.dto.DepositRequest;
+import com.imporve.skill.transactionservice.dto.TransactionRequest;
+import com.imporve.skill.transactionservice.dto.TransactionResponse;
 import com.imporve.skill.transactionservice.service.TransactionService;
 
 import lombok.RequiredArgsConstructor;
@@ -27,9 +28,16 @@ public class TransactionController {
 	}
 	
 	@PostMapping("/deposit")
-	public ResponseEntity<String> deposit(@RequestBody DepositRequest depositRequest){
-		transactionService.deposit(depositRequest);
+	public ResponseEntity<TransactionResponse> deposit(@RequestBody TransactionRequest transactionRequest){
+		TransactionResponse response = transactionService.deposit(transactionRequest);
 		
-		return new ResponseEntity<>("deposit", HttpStatus.OK);
+		return new ResponseEntity<>(response, HttpStatus.OK);
+	}
+	
+	@PostMapping("/withdraw")
+	public ResponseEntity<TransactionResponse> withdraw(@RequestBody TransactionRequest transactionRequest){
+		TransactionResponse response = transactionService.withdraw(transactionRequest);
+		
+		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 }
