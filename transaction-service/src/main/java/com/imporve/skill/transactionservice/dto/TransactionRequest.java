@@ -11,6 +11,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class TransactionRequest {
 	private String accountNo;
+	private String destBank;
+	private String destAccountNo;
 	private BigDecimal amount;
 	private String userName;
 }

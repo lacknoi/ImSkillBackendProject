@@ -3,11 +3,14 @@ package com.imporve.skill.transactionservice.service;
 import java.math.BigDecimal;
 import java.util.Date;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import com.imporve.skill.transactionservice.AppConstant;
 import com.imporve.skill.transactionservice.dto.AccountBalanceRequest;
+import com.imporve.skill.transactionservice.dto.AccountResponse;
 import com.imporve.skill.transactionservice.dto.TransactionRequest;
 import com.imporve.skill.transactionservice.dto.TransactionResponse;
 import com.imporve.skill.transactionservice.model.AccountBalance;
@@ -21,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Transactional
 public class TransactionService {
+	private final WebClient.Builder webClientBuilder;
 	private final AccountBalanceRepository accountBalanceRepository;
 	private final AccountBalanceTransactionRepository transactionRepository;
 	
@@ -80,6 +84,45 @@ public class TransactionService {
 					.transactionNo(transaction.getTransactionNo()).build();
 	}
 	
+	public TransactionResponse transfer(TransactionRequest transactionRequest) {
+		TransactionResponse response = new TransactionResponse();
+		
+		AccountResponse accountResponse = webClientBuilder.build().get()
+				.uri("http://account-service/api/account/accountno",
+						uriBuilder -> uriBuilder.queryParam("account-no", transactionRequest.getDestAccountNo()).build())
+				.retrieve()
+				.bodyToMono(AccountResponse.class)
+				.block();
+		
+		if(!StringUtils.isEmpty(accountResponse.getAccntNo())) {
+			AccountBalance fromAcc  = accountBalanceRepository.findByAccountNo(transactionRequest.getAccountNo());
+			AccountBalance destAcc = accountBalanceRepository.findByAccountNo(transactionRequest.getAccountNo());
+			
+			fromAcc.setTotalBalance(fromAcc.getTotalBalance().subtract(transactionRequest.getAmount()));
+			destAcc.setTotalBalance(destAcc.getTotalBalance().add(transactionRequest.getAmount()));
+			
+			AccountBalanceTransaction fromTransaction = mapTransactionRequestToTransaction(transactionRequest
+										, AppConstant.TRANSACTION_DEPOSIT, fromAcc.getTotalBalance());
+			AccountBalanceTransaction destTransaction = mapTransactionRequestToTransaction(transactionRequest
+										, AppConstant.TRANSACTION_DEPOSIT, destAcc.getTotalBalance());
+			
+			fromAcc.setLastUpd(new Date());
+			fromAcc.setLastUpdBy(transactionRequest.getUserName());
+			destAcc.setLastUpd(new Date());
+			destAcc.setLastUpdBy(transactionRequest.getUserName());
+			
+			accountBalanceRepository.save(fromAcc);
+			accountBalanceRepository.save(destAcc);
+			transactionRepository.save(fromTransaction);
+			transactionRepository.save(destTransaction);
+		}else {
+			response.setErrorCode(AppConstant.ERR_CODE_DEST_NOT_FOUND);
+			response.setErrorDescription(AppConstant.ERR_MSG_DEST_NOT_FOUND);
+		}
+		
+		return response;
+	}
+	
 	public TransactionResponse withdraw(TransactionRequest transactionRequest) {
 		TransactionResponse response = new TransactionResponse();
 		
@@ -99,8 +142,8 @@ public class TransactionService {
 			
 			response.setTransactionNo(transaction.getTransactionNo());
 		}else {
-			response.setErrorCode("E001");
-			response.setErrorDescription("Balance is not enough.");
+			response.setErrorCode(AppConstant.ERR_CODE_BALANCE_NOT_ENOUGH);
+			response.setErrorDescription(AppConstant.ERR_MSG_BALANCE_NOT_ENOUGH);
 		}
 		
 		return response;

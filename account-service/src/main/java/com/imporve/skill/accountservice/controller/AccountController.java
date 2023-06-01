@@ -27,23 +27,18 @@ import lombok.RequiredArgsConstructor;
 public class AccountController {
 	private final AccountService accountService;
 	
-	@GetMapping("/accounts")
-	public String listAll() {
-        System.out.println("listAll"); 
-		 
-        return "accounts";
-	}
-	
 	@GetMapping("/{account-no}")
 	@ResponseStatus(HttpStatus.OK)
 	public AccountResponse getAccountByNo(@PathVariable("account-no") String accountNo) {
 		return accountService.getAccountByAccountNo(accountNo);
 	}
-
-	@GetMapping("/billing/cano/{ca-no}")
+	
+	@GetMapping("/accountno")
 	@ResponseStatus(HttpStatus.OK)
-	public AccountResponse getAccountByCANo(@PathVariable("ca-no") String caNo) {
-		return accountService.getBAInfoByCaNo(caNo);
+	public AccountResponse getAccountByAccNo(@RequestParam("account-no") String accountNo) {
+		System.out.println("accountNo : " + accountNo);
+		
+		return accountService.getAccountByAccountNo(accountNo);
 	}
 	
 //	@GetMapping
@@ -52,12 +47,12 @@ public class AccountController {
 //        return accountService.getAccountByNo(baNo);
 //	}
 	
-	@GetMapping
-	@ResponseStatus(HttpStatus.OK)
-	public AccountResponse getAccountByBANo(@RequestParam("account-level") String accountLevel
-								, @RequestParam("account-no") String accountNo) {
-        return accountService.getAccountByaccountLevelAndAccountNo(accountLevel, accountNo);
-	}
+//	@GetMapping
+//	@ResponseStatus(HttpStatus.OK)
+//	public AccountResponse getAccountByBANo(@RequestParam("account-level") String accountLevel
+//								, @RequestParam("account-no") String accountNo) {
+//        return accountService.getAccountByaccountLevelAndAccountNo(accountLevel, accountNo);
+//	}
 	
 	@GetMapping("/billing/cano")
 	@ResponseStatus(HttpStatus.OK)

@@ -18,9 +18,7 @@ import com.imporve.skill.accountservice.dto.AccountRequest;
 import com.imporve.skill.accountservice.dto.AccountResponse;
 import com.imporve.skill.accountservice.model.Account;
 import com.imporve.skill.accountservice.model.AccountAttachFile;
-import com.imporve.skill.accountservice.model.BAInfo;
 import com.imporve.skill.accountservice.repository.AccountRepository;
-import com.imporve.skill.accountservice.repository.BAInfoRepository;
 import com.imporve.skill.accountservice.repository.ConfigRepository;
 import com.imporve.skill.accountservice.utils.DateTimeUtils;
 import com.imporve.skill.accountservice.utils.FileUtils;
@@ -32,36 +30,9 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 @Transactional
 public class AccountService {
-	private final BAInfoRepository baInfoRepository;
-	private final AccountRepository accountRepository;
 	private final WebClient.Builder webClientBuilder;
+	private final AccountRepository accountRepository;
 	private final ConfigRepository configRepository;
-	
-	public void getAccountBaNo(String accntNo) {
-		BAInfo baInfo = baInfoRepository.findByBaNo(accntNo);
-		
-		System.out.println(baInfo.getBaName());
-	}
-	
-	public AccountResponse getBAInfoByCaNo(String accntNo) {
-		BAInfo baInfo = baInfoRepository.findByCaNo(accntNo);
-		
-		AccountResponse accountResponse = AccountResponse.builder()
-				.accntNo(baInfo.getBaNo())
-				.accntName(baInfo.getBaName())
-				.build();
-		
-		return accountResponse;
-	}
-	
-	public List<AccountResponse> getAccountByNo(List<String> baNo) {
-		return baInfoRepository.findByBaNoIn(baNo).stream()
-			.map(baInfo ->
-					AccountResponse.builder()
-					.accntNo(baInfo.getBaNo())
-					.accntName(baInfo.getBaName()).build()
-				).toList();
-	}
 	
 	public AccountResponse getAccountByAccountNo(String accntNo) {
 		Account account = accountRepository.findByAccountNo(accntNo);
@@ -72,14 +43,6 @@ public class AccountService {
 				.build();
 		
 		return accountResponse;
-	}
-	
-	public AccountResponse getAccountByaccountLevelAndAccountNo(String accountLevel, String accountNo) {
-		Account account = accountRepository.findByAccountLevelAndAccountNo(accountLevel, accountNo);
-		
-		return AccountResponse.builder()
-				.accntName(account.getAccountName())
-				.accntNo(account.getAccountNo()).build();
 	}
 	
 	public List<AccountResponse> getAccountByMasterNo(String accountNo) {
